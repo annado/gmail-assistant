@@ -1,0 +1,6 @@
+.obsidian/
+token.json
+credentials.json
+activity.jsonl
+.venv/
+__pycache__/
