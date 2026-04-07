@@ -7,7 +7,7 @@ from typing import Any
 
 from gmail_helpers import extract_body, body_to_markdown, handle_error, get_header
 
-EMAILS_DIR = Path(__file__).parent / "emails"
+EMAILS_DIR = Path(__file__).resolve().parent.parent / "emails"
 
 
 def find_cached(message_id: str) -> Path | None:

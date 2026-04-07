@@ -6,6 +6,7 @@
 name = "Alex"
 grade = 7
 school = "Lincoln Middle School"
+school_from = ["lincoln.edu"]
 sports = ["soccer", "swim team"]
 activities = ["robotics club"]
 teachers = [
@@ -19,6 +20,7 @@ teachers = [
 # name = "Sam"
 # grade = 4
 # school = "Lincoln Elementary"
+# school_from = ["lincoln.edu"]
 # teachers = [
 #     "Mrs. Davis (Homeroom)",
 # ]

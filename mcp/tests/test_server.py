@@ -95,7 +95,6 @@ async def test_new_tools_are_registered():
         tools = await client.list_tools()
         tool_names = {t.name for t in tools}
         assert "gmail_list_messages" in tool_names
-        assert "gmail_summarize_school_emails" in tool_names
 
 
 @pytest.mark.asyncio
@@ -116,24 +115,3 @@ async def test_list_messages_tool(mock_list, mock_creds, mock_svc):
         mock_list.assert_called_once_with(mock_svc.return_value, "from:school.edu", 5)
 
 
-@pytest.mark.asyncio
-@patch("server.load_context")
-@patch("server.get_service")
-@patch("server.get_credentials")
-@patch("server.prepare_school_summary")
-async def test_summarize_school_emails_tool(mock_prepare, mock_creds, mock_svc, mock_ctx):
-    """Calling gmail_summarize_school_emails invokes prepare_school_summary."""
-    mock_creds.return_value = MagicMock()
-    mock_svc.return_value = MagicMock()
-    mock_ctx.return_value = MagicMock()
-    mock_prepare.return_value = "=== PERSONAL CONTEXT ===\nChild: Alex\n\n=== EMAIL FILES (1 emails) ===\n/path/to/msg1.md"
-
-    async with Client(mcp) as client:
-        result = await client.call_tool(
-            "gmail_summarize_school_emails", {"message_ids": ["msg1", "msg2"]}
-        )
-        assert "PERSONAL CONTEXT" in result.content[0].text
-        assert "EMAIL FILES" in result.content[0].text
-        mock_prepare.assert_called_once_with(
-            mock_svc.return_value, ["msg1", "msg2"], mock_ctx.return_value
-        )

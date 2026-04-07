@@ -1,8 +1,9 @@
 .obsidian/
+.claude/
 token.json
 credentials.json
 activity.jsonl
 .venv/
 __pycache__/
-context.toml
+skills/*/context.toml
 emails/
