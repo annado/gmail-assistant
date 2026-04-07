@@ -5,36 +5,8 @@ Every public function returns a descriptive string and never raises exceptions.
 
 from typing import Any
 
-from google.auth.exceptions import RefreshError
-from googleapiclient.errors import HttpError
-
-from gmail_helpers import extract_body, body_to_markdown
-
-
-def _get_subject(message: dict[str, Any]) -> str:
-    """Extract the Subject header from a Gmail API message dict."""
-    headers = message.get("payload", {}).get("headers", [])
-    for h in headers:
-        if h.get("name", "").lower() == "subject":
-            return h.get("value", "(no subject)")
-    return "(no subject)"
-
-
-def _handle_error(err: Exception, message_id: str) -> str:
-    """Convert known exceptions to user-friendly error strings."""
-    if isinstance(err, HttpError):
-        status = err.resp.status
-        if status == 404:
-            return f"Error: message {message_id} not found"
-        if status == 429:
-            return "Error: Gmail rate limit hit. Try again shortly."
-        detail = err.content.decode("utf-8", errors="replace") if err.content else err.reason
-        return f"Error: Gmail API returned {status}: {detail}"
-    if isinstance(err, RefreshError):
-        return "Authentication expired. Re-run gmail_auth.py to re-authorize."
-    if isinstance(err, ConnectionError):
-        return "Error: could not reach Gmail API. Check network."
-    return f"Error: {err}"
+from gmail_helpers import extract_body, body_to_markdown, handle_error, get_header
+from gmail_cache import find_cached, read_cached, save_email
 
 
 def mark_as_read(service: Any, message_id: str) -> str:
@@ -48,27 +20,25 @@ def mark_as_read(service: Any, message_id: str) -> str:
         msg = service.users().messages().get(
             userId="me", id=message_id, format="metadata", metadataHeaders=["Subject"]
         ).execute()
-        subject = _get_subject(msg)
+        subject = get_header(msg, "subject") or "(no subject)"
 
         return f'\u2713 Marked as read: "{subject}" ({message_id})'
     except Exception as exc:
-        return _handle_error(exc, message_id)
+        return handle_error(exc, message_id)
 
 
 def fetch_body(service: Any, message_id: str) -> str:
-    """Fetch a message and return its body as markdown."""
+    """Fetch a message and return its body as markdown. Uses local cache if available."""
     try:
-        msg = service.users().messages().get(
-            userId="me", id=message_id, format="full"
-        ).execute()
+        cached = read_cached(message_id)
+        if cached is not None:
+            return cached
 
-        payload = msg.get("payload", {})
-        plain, html = extract_body(payload)
-        md = body_to_markdown(plain, html)
+        save_email(service, message_id)
+        cached = read_cached(message_id)
+        if cached is not None:
+            return cached
 
-        if not md.strip():
-            return "(no body content)"
-
-        return md
+        return "(no body content)"
     except Exception as exc:
-        return _handle_error(exc, message_id)
+        return handle_error(exc, message_id)

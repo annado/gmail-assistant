@@ -7,6 +7,8 @@ import pytest
 from googleapiclient.errors import HttpError
 from google.auth.exceptions import RefreshError
 
+import gmail_cache
+
 
 def make_http_error(status, reason="error"):
     resp = MagicMock()
@@ -43,7 +45,11 @@ def _build_message(
             }
         )
     payload = {
-        "headers": [{"name": "Subject", "value": subject}],
+        "headers": [
+            {"name": "Subject", "value": subject},
+            {"name": "From", "value": "test@example.com"},
+            {"name": "Date", "value": "Mon, 7 Apr 2026 08:00:00 -0700"},
+        ],
     }
     if parts:
         payload["mimeType"] = "multipart/alternative"
@@ -64,6 +70,12 @@ def _build_message(
 def mock_service():
     """A MagicMock Gmail service with chainable methods."""
     return MagicMock()
+
+
+@pytest.fixture(autouse=True)
+def use_tmp_emails_dir(tmp_path, monkeypatch):
+    """Redirect EMAILS_DIR to a tmp directory for all tests."""
+    monkeypatch.setattr(gmail_cache, "EMAILS_DIR", tmp_path / "emails")
 
 
 # ---------- mark_as_read ----------

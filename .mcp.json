@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "gmail-assistant": {
+      "command": "uv",
+      "args": ["run", "--directory", "/Users/anna/src/gmail-assistant", "python", "server.py"]
+    }
+  }
+}

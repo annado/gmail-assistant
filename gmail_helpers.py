@@ -1,10 +1,38 @@
-"""Gmail API payload helpers — extract body text and convert to markdown."""
+"""Gmail API helpers — error handling, header extraction, body parsing."""
 
 import base64
 import re
 from typing import Any
 
 import markdownify
+from google.auth.exceptions import RefreshError
+from googleapiclient.errors import HttpError
+
+
+def handle_error(err: Exception, message_id: str) -> str:
+    """Convert known exceptions to user-friendly error strings."""
+    if isinstance(err, HttpError):
+        status = err.resp.status
+        if status == 404:
+            return f"Error: message {message_id} not found"
+        if status == 429:
+            return "Error: Gmail rate limit hit. Try again shortly."
+        detail = err.content.decode("utf-8", errors="replace") if err.content else err.reason
+        return f"Error: Gmail API returned {status}: {detail}"
+    if isinstance(err, RefreshError):
+        return "Authentication expired. Re-run gmail_auth.py to re-authorize."
+    if isinstance(err, ConnectionError):
+        return "Error: could not reach Gmail API. Check network."
+    return f"Error: {err}"
+
+
+def get_header(message: dict[str, Any], name: str) -> str:
+    """Extract a named header from a Gmail API message dict."""
+    headers = message.get("payload", {}).get("headers", [])
+    for h in headers:
+        if h.get("name", "").lower() == name.lower():
+            return h.get("value", "")
+    return ""
 
 
 def _get_charset(part: dict[str, Any]) -> str:
@@ -98,9 +126,10 @@ def _is_only_comments(html: str) -> bool:
 def body_to_markdown(plain: str, html: str) -> str:
     """Pick plain text if available; otherwise convert HTML to markdown.
 
-    Treats HTML that is only comments (e.g. ``<!--placeholder-->``) as empty.
+    Treats content that is only HTML comments (e.g. ``<!--placeholder-->``) as empty,
+    falling through to the next available format.
     """
-    if plain:
+    if plain and not _is_only_comments(plain):
         return plain
 
     if not html or _is_only_comments(html):

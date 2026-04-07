@@ -1,0 +1,24 @@
+# Personal context for school email summarization.
+# Copy this file to context.toml and fill in your details.
+# context.toml is git-ignored and will not be committed.
+
+[[children]]
+name = "Alex"
+grade = 7
+school = "Lincoln Middle School"
+sports = ["soccer", "swim team"]
+activities = ["robotics club"]
+teachers = [
+    "Ms. Johnson (Math)",
+    "Mr. Lee (Science)",
+]
+
+# Add more children by repeating the [[children]] block:
+#
+# [[children]]
+# name = "Sam"
+# grade = 4
+# school = "Lincoln Elementary"
+# teachers = [
+#     "Mrs. Davis (Homeroom)",
+# ]
